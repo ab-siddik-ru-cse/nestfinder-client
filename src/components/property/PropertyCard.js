@@ -28,7 +28,7 @@ export default function PropertyCard({ property, index = 0 }) {
         </div>
         <div className="absolute top-3 right-3">
           <span className="bg-accent text-white text-xs font-bold px-3 py-1 rounded-full shadow">
-            ৳{property.rent?.toLocaleString()}/{property.rentType === 'Monthly' ? 'mo' : property.rentType === 'Weekly' ? 'wk' : 'day'}
+           ${property.rent?.toLocaleString()}/{property.rentType === 'Monthly' ? 'mo' : property.rentType === 'Weekly' ? 'wk' : 'day'}
           </span>
         </div>
       </div>
