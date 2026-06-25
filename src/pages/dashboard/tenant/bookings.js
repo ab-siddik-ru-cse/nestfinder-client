@@ -6,12 +6,13 @@ import { withAuth } from '@/lib/withAuth';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import Spinner from '@/components/ui/Spinner';
 import Badge from '@/components/ui/Badge';
-import { FiInbox, FiMapPin, FiCalendar } from 'react-icons/fi';
+import { FiInbox, FiMapPin, FiCalendar, FiCreditCard } from 'react-icons/fi';
 
 function TenantBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [payingId, setPayingId] = useState(null);
 
   useEffect(() => { fetchBookings(); }, []);
 
@@ -25,6 +26,22 @@ function TenantBookings() {
       setError('Failed to load your bookings.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePayNow = async (bookingId) => {
+    setPayingId(bookingId);
+    try {
+      const { data } = await api.post('/api/payments/create-checkout-session', { bookingId });
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error('Could not initiate payment. Please try again.');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Payment failed. Please try again.');
+    } finally {
+      setPayingId(null);
     }
   };
 
@@ -55,6 +72,7 @@ function TenantBookings() {
                 <th className="px-5 py-3 font-medium">Amount Paid</th>
                 <th className="px-5 py-3 font-medium">Booking Status</th>
                 <th className="px-5 py-3 font-medium">Payment</th>
+                <th className="px-5 py-3 font-medium">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -67,11 +85,30 @@ function TenantBookings() {
                     </div>
                   </td>
                   <td className="px-5 py-4 text-gray-600">
-                    <div className="flex items-center gap-1"><FiCalendar className="w-3.5 h-3.5 text-brand-400" /> {new Date(b.moveInDate).toLocaleDateString()}</div>
+                    <div className="flex items-center gap-1">
+                      <FiCalendar className="w-3.5 h-3.5 text-brand-400" />
+                      {new Date(b.moveInDate).toLocaleDateString()}
+                    </div>
                   </td>
-                  <td className="px-5 py-4 text-gray-800 font-medium">৳{b.amountPaid?.toLocaleString() || 0}</td>
+                  <td className="px-5 py-4 text-gray-800 font-medium">
+                    ৳{b.amountPaid?.toLocaleString() || 0}
+                  </td>
                   <td className="px-5 py-4"><Badge status={b.status} /></td>
                   <td className="px-5 py-4"><Badge status={b.paymentStatus} /></td>
+                  <td className="px-5 py-4">
+                    {b.paymentStatus === 'Pending' && b.status !== 'Rejected' ? (
+                      <button
+                        onClick={() => handlePayNow(b._id)}
+                        disabled={payingId === b._id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white text-xs font-medium disabled:opacity-60 transition-colors"
+                      >
+                        <FiCreditCard className="w-3.5 h-3.5" />
+                        {payingId === b._id ? 'Redirecting…' : 'Pay Now'}
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-300">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
